@@ -379,7 +379,6 @@
       font-weight:950;
     }
 
-    /* Tap-to-play hint (no play button) */
     .tap-hint{
       position:fixed;
       left:50%;
@@ -417,15 +416,12 @@
       </div>
 
       <div class="nav-actions">
-        <!-- ✅ REMOVED Play button (autostart after first interaction anywhere) -->
-
         <div class="volume" title="Volume">
           <span aria-hidden="true">🔊</span>
           <input id="vol" type="range" min="0" max="1" step="0.01" value="0.6" />
           <button class="pill primary" id="muteBtn" style="padding:8px 10px;">🙈</button>
         </div>
 
-        
         <button class="pill primary" id="confettiBtn">💖 Confetti</button>
         <button class="pill primary" id="surpriseBtn">🎁 Surprise</button>
       </div>
@@ -540,10 +536,8 @@
     </section>
   </main>
 
-  <!-- ✅ Audio (path exactly as you said) -->
   <audio id="bgm" preload="auto" loop></audio>
 
-  <!-- Chocolate modal -->
   <div class="modal" id="chocoModal" role="dialog" aria-modal="true" aria-labelledby="chocoTitle">
     <div class="modal-card">
       <div class="modal-head">
@@ -557,7 +551,6 @@
     </div>
   </div>
 
-  <!-- Wish modal -->
   <div class="modal" id="wishModal" role="dialog" aria-modal="true" aria-labelledby="wishTitle">
     <div class="modal-card">
       <div class="modal-head">
@@ -578,14 +571,13 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <!-- ✅ Tap hint (disappears once music starts) -->
-  <div class="tap-hint" id="tapHint">👉 Drag the sound button to start the song 🎶💛</div>
+  <div class="tap-hint" id="tapHint">👉 Tap anywhere (or adjust volume) to start the song 🎶💛</div>
 
   <canvas id="cardCanvas" width="1080" height="1350"></canvas>
 
   <script>
     const LOVER_NAME = "Vinni";
-    const AUDIO_SRC = "darling-song.mp3"; // ✅ exactly as you said
+    const AUDIO_SRC = "darling-song.mp3";
 
     const MEMORIES = [
       "That time your smile made my whole day brighter 💛✨",
@@ -611,10 +603,8 @@
     const vol = document.getElementById("vol");
     const muteBtn = document.getElementById("muteBtn");
 
-    const loveRainBtn = document.getElementById("loveRainBtn");
     const confettiBtn = document.getElementById("confettiBtn");
     const surpriseBtn = document.getElementById("surpriseBtn");
-    const shareBtn = document.getElementById("shareBtn");
     const downloadCardBtn = document.getElementById("downloadCardBtn");
 
     const meter = document.getElementById("meter");
@@ -657,6 +647,11 @@
     }
 
     function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function on(el, evt, fn, opts){
+      if (!el) return;
+      el.addEventListener(evt, fn, opts);
+    }
 
     function makeFloatingHearts(count = 18){
       for (let i=0;i<count;i++){
@@ -862,26 +857,6 @@
       }
     }
 
-    async function sharePage(){
-      const text = `Happy Chocolate Day, ${LOVER_NAME} 💛🍫\nA sweet little love page made for you 💞`;
-      const url = window.location.href;
-
-      try{
-        if (navigator.share){
-          await navigator.share({ title: document.title, text, url });
-          showToast("Shared 💛");
-          return;
-        }
-      }catch{}
-
-      try{
-        await navigator.clipboard.writeText(`${text}\n${url}`);
-        showToast("Link copied 📋💛");
-      }catch{
-        showToast("Copy failed 💛");
-      }
-    }
-
     function roundRect(ctx, x, y, w, h, r){
       const rr = Math.min(r, w/2, h/2);
       ctx.beginPath();
@@ -974,26 +949,22 @@
         hideTapHint();
         showToast("Love song started 🎶💛");
       }catch{
-        // Autoplay blocked until a real gesture happens; hint stays visible.
+        // Autoplay blocked; hint stays visible.
       }
     }
 
-    // Try once on load (often blocked, but safe)
     tryStartAudio();
-
-    // Guaranteed start on first user gesture anywhere
     window.addEventListener("pointerdown", tryStartAudio, { once:true });
     window.addEventListener("keydown", tryStartAudio, { once:true });
 
-    // If user adjusts volume/mute, that is also a gesture; attempt play again.
-    vol.addEventListener("input", () => {
+    on(vol, "input", () => {
       bgm.muted = false;
       muteBtn.textContent = "🙈";
       bgm.volume = Number(vol.value);
       tryStartAudio();
     });
 
-    muteBtn.addEventListener("click", () => {
+    on(muteBtn, "click", () => {
       bgm.muted = !bgm.muted;
       muteBtn.textContent = bgm.muted ? "🙊" : "🙈";
       if (!bgm.muted) tryStartAudio();
@@ -1022,38 +993,35 @@
       makeFloatingHearts(22);
       setInterval(() => makeFloatingHearts(8), 2600);
 
-      meter.addEventListener("input", updateLoveDashboard);
+      on(meter, "input", updateLoveDashboard);
       updateLoveDashboard();
 
       nextChocolateDayCountdown();
       setInterval(nextChocolateDayCountdown, 1000);
 
-      loveRainBtn.addEventListener("click", () => { makeFloatingHearts(40); showToast("Love shower activated 💛💛💛"); });
-      confettiBtn.addEventListener("click", burstConfetti);
-      surpriseBtn.addEventListener("click", surprise);
-
-      shareBtn.addEventListener("click", sharePage);
-      downloadCardBtn.addEventListener("click", downloadLoveCard);
+      on(confettiBtn, "click", burstConfetti);
+      on(surpriseBtn, "click", surprise);
+      on(downloadCardBtn, "click", downloadLoveCard);
 
       document.querySelectorAll(".chip").forEach(chip => {
         chip.addEventListener("click", () => showToast(chip.dataset.say));
       });
 
       renderWishes();
-      addWishBtn.addEventListener("click", () => { addWish(wishInput.value); wishInput.value=""; });
-      wishInput.addEventListener("keydown", (e) => { if (e.key === "Enter"){ addWish(wishInput.value); wishInput.value=""; }});
+      on(addWishBtn, "click", () => { addWish(wishInput.value); wishInput.value=""; });
+      on(wishInput, "keydown", (e) => { if (e.key === "Enter"){ addWish(wishInput.value); wishInput.value=""; }});
 
-      wishOpenBtn.addEventListener("click", () => openModal(wishModal));
-      closeWish.addEventListener("click", () => closeModal(wishModal));
-      wishModal.addEventListener("click", (e) => { if (e.target === wishModal) closeModal(wishModal); });
+      on(wishOpenBtn, "click", () => openModal(wishModal));
+      on(closeWish, "click", () => closeModal(wishModal));
+      on(wishModal, "click", (e) => { if (e.target === wishModal) closeModal(wishModal); });
 
-      addWishBtn2.addEventListener("click", () => { addWish(wishInput2.value); wishInput2.value=""; });
-      wishInput2.addEventListener("keydown", (e) => { if (e.key === "Enter"){ addWish(wishInput2.value); wishInput2.value=""; }});
+      on(addWishBtn2, "click", () => { addWish(wishInput2.value); wishInput2.value=""; });
+      on(wishInput2, "keydown", (e) => { if (e.key === "Enter"){ addWish(wishInput2.value); wishInput2.value=""; }});
 
       setupChocolateGrid();
-      openChocoModal.addEventListener("click", () => openModal(chocoModal));
-      closeChoco.addEventListener("click", () => closeModal(chocoModal));
-      chocoModal.addEventListener("click", (e) => { if (e.target === chocoModal) closeModal(chocoModal); });
+      on(openChocoModal, "click", () => openModal(chocoModal));
+      on(closeChoco, "click", () => closeModal(chocoModal));
+      on(chocoModal, "click", (e) => { if (e.target === chocoModal) closeModal(chocoModal); });
 
       setInterval(() => {
         const moods = ["Golden & Cozy 💛", "Sweet & Sparkly ✨", "Kiss-ready 😘", "Hug-hungry 🤗", "Chocolatey 🍫"];
